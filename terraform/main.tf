@@ -7,3 +7,12 @@ module "vpc" {
   project             = "LLM-ec2-box"
   environment         = "dev"
 }
+
+module "ec2_sg" {
+  source      = "./modules/security_group"
+  project     = "llm"
+  environment = "dev"
+  vpc_id      = module.vpc.vpc_id
+  ssh_cidr    = "xx.xxx.xxx.xx/32" # Replace with your real IP (YOUR_IP/32)
+}
+
