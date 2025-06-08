@@ -16,3 +16,15 @@ module "ec2_sg" {
   ssh_cidr    = "xx.xxx.xxx.xx/32" # Replace with your real IP (YOUR_IP/32)
 }
 
+module "ec2" {
+  source              = "./modules/ec2"
+  ami_id              = "ami-0731becbf832f281e"
+  instance_type       = "t2.micro"              # or g4dn.xlarge for GPU inference
+  private_subnet_ids  = module.vpc.private_subnet_ids
+  security_group_id   = module.ec2_sg.security_group_id
+  project             = "llm"
+  environment         = "dev"
+  instance_profile_name = null
+}
+
+
