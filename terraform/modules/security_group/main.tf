@@ -12,21 +12,13 @@ resource "aws_security_group" "this" {
   }
 
   ingress {
-    description = "Allow HTTP"
+    description = "Allow HTTP from ALB"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    security_groups = [var.alb_sg_id]  # <-- This will be passed from ALB module
   }
 
-  # Optionally allow HTTPS
-  ingress {
-    description = "Allow HTTPS"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 
   egress {
     description = "Allow all outbound traffic"
