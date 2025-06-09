@@ -29,3 +29,8 @@ variable "instance_profile_name" {
   description = "IAM instance profile name"
   default     = null
 }
+
+variable "key_pair_name" {
+  type = string
+}
+

@@ -14,6 +14,20 @@ module "ec2_sg" {
   environment = "dev"
   vpc_id      = module.vpc.vpc_id
   ssh_cidr    = "xx.xxx.xxx.xx/32" # Replace with your real IP (YOUR_IP/32)
+  alb_sg_id   = module.alb_sg.alb_sg_id
+}
+
+module "alb_sg" {
+  source      = "./modules/security_group_alb"
+  project     = "llm"
+  environment = "dev"
+  vpc_id      = module.vpc.vpc_id
+}
+
+module "key_pair" {
+  source      = "./modules/key_pair"
+  project     = "llm"
+  environment = "dev"
 }
 
 module "ec2" {
@@ -25,6 +39,18 @@ module "ec2" {
   project             = "llm"
   environment         = "dev"
   instance_profile_name = null
+  key_pair_name       = module.key_pair.key_name
 }
+
+module "alb" {
+  source            = "./modules/alb"
+  project           = "llm"
+  environment       = "dev"
+  vpc_id            = module.vpc.vpc_id
+  public_subnet_ids = module.vpc.public_subnet_ids
+  ec2_instance_id   = module.ec2.instance_id
+  alb_sg_id         = module.alb_sg.alb_sg_id
+}
+
 
 
