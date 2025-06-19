@@ -1,26 +1,36 @@
 locals {
-  project     = "llm-ec2-box"
-  environment = "dev"
+  project        = "llm-ec2-box"
+  environment    = "dev"
+  ssh_cidr       = "xx.xxx.xxx.xx/32" # Replace with your real IP (YOUR_IP/32)
+  public_key_loc = file("C:/Users/USER_NAME/.ssh/${local.project}-${local.environment}.pub")
 }
 
 
 module "vpc" {
-  source              = "./modules/vpc"
-  vpc_cidr_block      = "10.0.0.0/16"
-  public_subnet_cidrs = ["10.0.1.0/24", "10.0.2.0/24"]
+  source               = "./modules/vpc"
+  vpc_cidr_block       = "10.0.0.0/16"
+  public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
   private_subnet_cidrs = ["10.0.3.0/24", "10.0.4.0/24"]
-  availability_zones  = ["us-east-1a", "us-east-1b"]
-  project             = local.project
-  environment         = local.environment
+  availability_zones   = ["us-east-1a", "us-east-1b"]
+  project              = local.project
+  environment          = local.environment
 }
 
-module "ec2_sg" {
-  source      = "./modules/security_group"
+module "ec2_bastion_sg" {
+  source      = "./modules/security_group_bastion"
   project     = local.project
   environment = local.environment
   vpc_id      = module.vpc.vpc_id
-  ssh_cidr    = "xx.xxx.xxx.xx/32" # Replace with your real IP (YOUR_IP/32)
-  alb_sg_id   = module.alb_sg.alb_sg_id
+  ssh_cidr    = local.ssh_cidr
+}
+
+module "ec2_sg" {
+  source        = "./modules/security_group"
+  project       = local.project
+  environment   = local.environment
+  vpc_id        = module.vpc.vpc_id
+  bastion_sg_id = module.ec2_bastion_sg.security_group_id
+  alb_sg_id     = module.alb_sg.alb_sg_id
 }
 
 module "alb_sg" {
@@ -31,21 +41,35 @@ module "alb_sg" {
 }
 
 module "key_pair" {
-  source      = "./modules/key_pair"
-  project     = local.project
-  environment = local.environment
+  source         = "./modules/key_pair"
+  project        = local.project
+  environment    = local.environment
+  public_key_loc = local.public_key_loc
 }
 
 module "ec2" {
-  source              = "./modules/ec2"
-  ami_id              = "ami-0731becbf832f281e"
-  instance_type       = "t2.micro"              # or g4dn.xlarge for GPU inference
-  private_subnet_ids  = module.vpc.private_subnet_ids
-  security_group_id   = module.ec2_sg.security_group_id
-  project             = local.project
-  environment         = local.environment
+  source                = "./modules/ec2"
+  ami_id                = "ami-0731becbf832f281e"
+  instance_type         = "t2.micro" # or g4dn.xlarge for GPU inference
+  private_subnet_ids    = module.vpc.private_subnet_ids
+  security_group_id     = module.ec2_sg.security_group_id
+  project               = local.project
+  environment           = local.environment
   instance_profile_name = null
-  key_pair_name       = module.key_pair.key_name
+  key_pair_name         = module.key_pair.key_name
+}
+
+module "bastion" {
+  source            = "./modules/ec2_bastion"
+  ami_id            = "ami-0731becbf832f281e"
+  instance_type     = "t2.micro"
+  project           = local.project
+  environment       = local.environment
+  vpc_id            = module.vpc.vpc_id
+  public_subnet_ids = module.vpc.public_subnet_ids
+  ssh_cidr          = local.ssh_cidr
+  key_pair_name     = module.key_pair.key_name
+  security_group_id = module.ec2_bastion_sg.security_group_id
 }
 
 module "alb" {
@@ -57,6 +81,3 @@ module "alb" {
   ec2_instance_id   = module.ec2.instance_id
   alb_sg_id         = module.alb_sg.alb_sg_id
 }
-
-
-

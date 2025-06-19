@@ -6,6 +6,10 @@ variable "environment" {
   type = string
 }
 
-variable "public_key_loc" {
+variable "vpc_id" {
+  type = string
+}
+
+variable "ssh_cidr" {
   type = string
 }

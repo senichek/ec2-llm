@@ -10,9 +10,9 @@ variable "vpc_id" {
   type = string
 }
 
-variable "ssh_cidr" {
+variable "bastion_sg_id" {
   type        = string
-  description = "CIDR block allowed to SSH (your IP)"
+  description = "CIDR block allowed to SSH"
 }
 
 variable "alb_sg_id" {
